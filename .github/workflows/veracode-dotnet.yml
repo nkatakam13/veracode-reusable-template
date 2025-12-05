@@ -14,8 +14,7 @@ on:
         required: true
       VERACODE_API_KEY:
         required: true
-      token:           # <--- This line is KEY for private-to-private reuse
-        required: false
+      
 
 jobs:
   veracode-scan:
