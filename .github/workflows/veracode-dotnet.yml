@@ -49,7 +49,7 @@ jobs:
           Compress-Archive -Path "**/bin/Release/*" -DestinationPath veracode_artifact.zip -Force
 
       - name: Veracode Upload & Scan
-        uses: veracode/veracode-uploadandscan-action@v0.2.10
+        uses: veracode/veracode-uploadandscan-action@v0.2.9
         with:
           appname: ${{ github.event.repository.name }}
           createprofile: true
