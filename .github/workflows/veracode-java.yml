@@ -1,0 +1,67 @@
+name: Reusable Veracode Scan for Java Applications
+
+on:
+  workflow_call:
+    inputs:
+      build_tool:
+        required: true
+        type: string   # maven or gradle
+      project_path:
+        required: true
+        type: string
+      artifact_pattern:
+        required: false
+        type: string
+        default: "**/target/*.jar"
+    secrets:
+      VERACODE_API_ID:
+        required: true
+      VERACODE_API_KEY:
+        required: true
+
+jobs:
+  veracode-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ---------- Maven ----------
+      - name: Build with Maven
+        if: ${{ inputs.build_tool == 'maven' }}
+        working-directory: ${{ inputs.project_path }}
+        run: mvn -B clean package -DskipTests
+
+      # ---------- Gradle ----------
+      - name: Build with Gradle
+        if: ${{ inputs.build_tool == 'gradle' }}
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -x test
+
+      # ---------- Prepare Artifact (Jar, War, or Zip) ----------
+      - name: Find artifact
+        run: |
+          echo "Finding artifact using pattern: ${{ inputs.artifact_pattern }}"
+          file=$(find . -path "${{ inputs.project_path }}/*" -type f -name "*.jar" -o -name "*.war" | head -1)
+          echo "Found: $file"
+          cp "$file" veracode_artifact.jar
+
+      # ---------- Veracode Upload & Scan ----------
+      - name: Veracode Upload & Scan
+        uses: veracode/veracode-uploadandscan-action@0.2.10
+        with:
+          appname: ${{ github.event.repository.name }}
+          createprofile: true
+          filepath: "veracode_artifact.jar"
+          vid: ${{ secrets.VERACODE_API_ID }}
+          vkey: ${{ secrets.VERACODE_API_KEY }}
+          scantimeout: 120

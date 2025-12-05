@@ -1,0 +1,59 @@
+name: Reusable Veracode Scan for .NET Framework
+
+on:
+  workflow_call:
+    inputs:
+      sln_file:
+        required: true
+        type: string
+      project_path:
+        required: true
+        type: string
+    secrets:
+      VERACODE_API_ID:
+        required: true
+      VERACODE_API_KEY:
+        required: true
+
+jobs:
+  veracode-scan:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup NuGet
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1
+
+      # Restore using provided SLN
+      - name: Restore NuGet Packages
+        run: nuget restore ${{ inputs.sln_file }}
+
+      # Build the solution
+      - name: Build Solution with MSBuild
+        shell: powershell
+        run: |
+          $msbuild = (Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022" -Recurse -Filter MSBuild.exe | Select-Object -First 1).FullName
+          Write-Host "Using MSBuild at: $msbuild"
+          & $msbuild ${{ inputs.sln_file }} /p:Configuration=Release /p:Platform="Any CPU"
+
+      # Zip artifacts for Veracode
+      - name: Create artifact zip
+        shell: powershell
+        run: |
+          mkdir veracode_artifact
+          Copy-Item -Path "**/bin/Release/*" -Destination "veracode_artifact" -Recurse -Force
+          Compress-Archive -Path veracode_artifact -DestinationPath veracode_artifact.zip
+
+      # Upload and Scan
+      - name: Veracode Upload & Scan
+        uses: veracode/veracode-uploadandscan-action@0.2.10
+        with:
+          appname: ${{ github.event.repository.name }}
+          createprofile: true
+          filepath: "veracode_artifact.zip"
+          vid: ${{ secrets.VERACODE_API_ID }}
+          vkey: ${{ secrets.VERACODE_API_KEY }}
+          scantimeout: 120
