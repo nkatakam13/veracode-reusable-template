@@ -1,7 +1,7 @@
 
 # Using Veracode Reusable Workflows in Your Repository
 
-This document explains how to use the **Veracode reusable workflows** for scanning .NET and Java applications. The reusable workflows are stored in a central repository (`security-workflows`) and can be called from any application repository using the repository name as the application name in Veracode.
+This document explains how to use the **Veracode reusable workflows** for scanning .NET and Java applications. The reusable workflows are stored in a central repository (`veracode-reusable-workflows`) and can be called from any application repository using the repository name as the application name in Veracode.
 
 ---
 
@@ -33,10 +33,11 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: "0 0 */90 * *"   # Schedule scan every 90 days
+  workflow_dispatch: # Manual trigger
 
 jobs:
   veracode:
-    uses: your-org/security-workflows/.github/workflows/veracode-dotnet.yml@main
+    uses: GS-MAFTech/veracode-reusable-workflows/.github/workflows/veracode-dotnet.yml@main
     with:
       sln_file: "ECoupon_MAF.sln"      # Path to solution file
       project_path: "."                 # Root or subfolder of the project
@@ -66,10 +67,11 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: "0 0 */90 * *"   # Policy scan every 90 days
+  workflow_dispatch: # Manual trigger
 
 jobs:
   veracode:
-    uses: your-org/security-workflows/.github/workflows/veracode-java.yml@main
+    uses: GS-MAFTech/veracode-reusable-workflows/.github/workflows/veracode-java.yml@main
     with:
       build_tool: "maven"               # "maven" or "gradle"
       project_path: "."                 # Project root or subfolder
@@ -97,7 +99,7 @@ jobs:
    - For Java, provide the relative path to the project root and the correct artifact pattern.
 3. **Copy the workflow YAML** for .NET or Java to `.github/workflows/` in your repository.
 4. **Adjust inputs** (`sln_file`, `project_path`, `build_tool`, etc.) according to your repository structure.
-5. **Push the workflow** to `main` (or target branch) to trigger scans automatically or run manually via **Actions → Run workflow**.
+5. **Push the workflow** to `main` (or target branch) to trigger scans automatically on push, scheduled cron, or manually using workflow dispatch  via **Actions → Run workflow**.
 
 ---
 
