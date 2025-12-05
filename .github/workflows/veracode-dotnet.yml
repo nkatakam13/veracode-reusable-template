@@ -14,7 +14,6 @@ on:
         required: true
       VERACODE_API_KEY:
         required: true
-      
 
 jobs:
   veracode-scan:
@@ -24,15 +23,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Setup NuGet
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v1
 
-      # Restore using provided SLN
       - name: Restore NuGet Packages
         run: nuget restore ${{ inputs.sln_file }}
 
-      # Build the solution
       - name: Build Solution with MSBuild
         shell: powershell
         run: |
@@ -40,17 +36,20 @@ jobs:
           Write-Host "Using MSBuild at: $msbuild"
           & $msbuild ${{ inputs.sln_file }} /p:Configuration=Release /p:Platform="Any CPU"
 
-      # Zip artifacts for Veracode
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
+
       - name: Create artifact zip
         shell: powershell
         run: |
-          mkdir veracode_artifact
-          Copy-Item -Path "**/bin/Release/*" -Destination "veracode_artifact" -Recurse -Force
-          Compress-Archive -Path veracode_artifact -DestinationPath veracode_artifact.zip
+          Compress-Archive -Path "**/bin/Release/*" -DestinationPath veracode_artifact.zip -Force
 
-      # Upload and Scan
       - name: Veracode Upload & Scan
-        uses: veracode/veracode-uploadandscan-action@0.2.10
+        uses: veracode/veracode-uploadandscan-action@v0.2.10
         with:
           appname: ${{ github.event.repository.name }}
           createprofile: true
